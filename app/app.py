@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
 from werkzeug.security import generate_password_hash, check_password_hash
+import requests
 import os
 
 app = Flask(__name__)
@@ -11,7 +12,7 @@ db = client['usersdb']
 usersCollection = db['users']
 app.config['JWT_SECRET_KEY'] = 'super-secret'
 jwt = JWTManager(app)
-
+SUBSCRIPTION_API_URL = os.environ.get("SUBSCRIPTION_API_URL")
 # Define custom claims for different authorization levels
 @jwt.additional_claims_loader
 def add_claims_to_access_token(identity):
@@ -84,6 +85,27 @@ def signup():
 
     access_token = create_access_token(identity={"_id": user_id, "email": email, "role": "user"})
     return jsonify({"access_token": access_token}), 201
+
+@app.route("/create_subscription", methods=["POST"])
+def create_subscription_proxy():
+    # Parse the JSON body
+    user_id = request.json.get("user_id", None)
+    subscription_type_id = request.json.get("subscription_type_id", None)
+
+    # Forward the data to the external API
+    response = requests.post(
+        f"{SUBSCRIPTION_API_URL}/subscriptions",
+        json={"user_id": user_id, "subscription_type_id": subscription_type_id}
+    )
+
+    # If subscription was created successfully and user's role is "user", update the role to "subscriber"
+    if response.status_code == 201:
+        user = usersCollection.find_one({"_id": user_id})
+        if user and user["role"] == "user":
+            usersCollection.update_one({"_id": user_id}, {"$set": {"role": "subscriber"}})
+
+    # Return the same response from the external API
+    return jsonify(response.json()), response.status_code
 
 # Protected endpoint for free users
 @app.route("/protected/free", methods=["GET"])
