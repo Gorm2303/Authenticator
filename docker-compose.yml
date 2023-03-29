@@ -25,3 +25,4 @@ services:
       TV2_EMAIL: "tv2@example.com"
       TV2_PASSWORD: "password123"
       SUBSCRIPTION_API_URL: ""
+      CACHER_API_URL: ""

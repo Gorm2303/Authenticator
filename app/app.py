@@ -97,6 +97,7 @@ def signup():
     access_token = create_access_token(identity={"_id": user_id, "email": email, "role": "user"})
     return jsonify({"access_token": access_token}), 201
 
+# Subscription proxy endpoint
 @app.route("/create_subscription", methods=["POST"])
 def create_subscription_proxy():
     # Parse the JSON body
@@ -116,6 +117,39 @@ def create_subscription_proxy():
             usersCollection.update_one({"_id": user_id}, {"$set": {"role": "subscriber"}})
 
     # Return the same response from the external API
+    return jsonify(response.json()), response.status_code
+
+# CACHER PROXY ENDPOINTS
+
+@app.route('/api/v1/videometadata', methods=['GET'])
+@jwt_required()
+def get_videos_metadata_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") in ["subscriber", "admin"]):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    response = requests.get(os.environ.get("CACHER_API_URL") + "/api/v1/videometadata")
+    return jsonify(response.json()), response.status_code
+
+@app.route('/api/v1/videometadata/<id>', methods=['GET'])
+@jwt_required()
+def get_video_metadata_proxy(id):
+    claims = get_jwt()
+    if not (claims.get("role") in ["subscriber", "admin"]):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    response = requests.get(os.environ.get("CACHER_API_URL") + f"/api/v1/videometadata/{id}")
+    return jsonify(response.json()), response.status_code
+
+@app.route('/api/v1/videometadata/search', methods=['GET'])
+@jwt_required()
+def search_videos_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") in ["subscriber", "admin"]):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    query = request.args.get('q', '')
+    response = requests.get(os.environ.get("CACHER_API_URL") + f"/api/v1/videometadata/search?q={query}")
     return jsonify(response.json()), response.status_code
 
 # Protected endpoint for free users
