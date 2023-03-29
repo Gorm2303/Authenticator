@@ -2,11 +2,12 @@ from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_cors import CORS
 import requests
 import os
 
 app = Flask(__name__)
-app.config.from_pyfile("config.py")
+CORS(app)
 client = MongoClient(os.environ.get("MONGO_URI"))
 db = client['usersdb']
 usersCollection = db['users']
@@ -52,7 +53,7 @@ def index():
     return 'Welcome to the Auth API!'
 
 # Login endpoint
-@app.route("/login", methods=["POST"])
+@app.route("/api/v1/login", methods=["POST"])
 def login():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
@@ -76,7 +77,7 @@ def login():
     return jsonify({"msg": "Invalid email or password"}), 401
 
 # Signup endpoint
-@app.route("/signup", methods=["POST"])
+@app.route("/api/v1/signup", methods=["POST"])
 def signup():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
@@ -97,8 +98,9 @@ def signup():
     access_token = create_access_token(identity={"_id": user_id, "email": email, "role": "user"})
     return jsonify({"access_token": access_token}), 201
 
-# Subscription proxy endpoint
-@app.route("/create_subscription", methods=["POST"])
+# SUBSCRIPTION PROXY ENDPOINTS
+
+@app.route("/api/v1/create_subscription", methods=["POST"])
 def create_subscription_proxy():
     # Parse the JSON body
     user_id = request.json.get("user_id", None)
@@ -117,6 +119,12 @@ def create_subscription_proxy():
             usersCollection.update_one({"_id": user_id}, {"$set": {"role": "subscriber"}})
 
     # Return the same response from the external API
+    return jsonify(response.json()), response.status_code
+
+@app.route("/api/v1/subscriptiontypes", methods=["GET"])
+def get_subscription_types():
+    response = requests.get(f"{SUBSCRIPTION_API_URL}/subscriptiontypes")
+
     return jsonify(response.json()), response.status_code
 
 # CACHER PROXY ENDPOINTS
