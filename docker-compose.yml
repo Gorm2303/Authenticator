@@ -24,3 +24,4 @@ services:
       MONGO_URI: "mongodb://root:root@mongo_users:27017"
       TV2_EMAIL: "tv2@example.com"
       TV2_PASSWORD: "password123"
+      SUBSCRIPTION_API_URL: ""

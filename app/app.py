@@ -59,6 +59,17 @@ def login():
 
     user = usersCollection.find_one({"email": email})
     if user and check_password_hash(user["password"], password):
+        # Check if user has an active subscription
+        response = requests.get(f"{SUBSCRIPTION_API_URL}/subscriptions/{user['_id']}/active")
+
+        # Update user role based on active subscription status
+        if response.status_code == 200 and user["role"] == "user":
+            usersCollection.update_one({"_id": user["_id"]}, {"$set": {"role": "subscriber"}})
+            user["role"] = "subscriber"
+        elif response.status_code != 200 and user["role"] == "subscriber":
+            usersCollection.update_one({"_id": user["_id"]}, {"$set": {"role": "user"}})
+            user["role"] = "user"
+
         access_token = create_access_token(identity=user)
         return jsonify({"access_token": access_token}), 200
 
