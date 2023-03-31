@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
+from bson import ObjectId
 import requests
 import os
 
@@ -23,7 +24,6 @@ def add_claims_to_access_token(identity):
         return {"role": "subscriber"}
     return {"role": "user"}
 
-# Load user identity from email
 @jwt.user_identity_loader
 def user_identity_lookup(user):
     return str(user["_id"])
@@ -31,7 +31,7 @@ def user_identity_lookup(user):
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
-    return usersCollection.find_one({"_id": identity})
+    return usersCollection.find_one({"_id": ObjectId(identity)})
 
 # Initialize TV2 user
 def initialize_tv2_user():
