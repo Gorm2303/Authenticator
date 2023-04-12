@@ -15,10 +15,14 @@ def client():
 @pytest.fixture
 def tv2_user_token():
     email = os.environ.get("TV2_EMAIL")
-    user = usersCollection.find_one({"email": email})
-    if user:
-        access_token = create_access_token(identity=user)
-        return access_token
+    password = os.environ.get("TV2_PASSWORD")
+
+    with patch.dict('os.environ', {'SUBSCRIPTION_API_URL': 'http://fakeurl.com'}):
+        response = app.test_client().post('/api/v1/login', json={"email": email, "password": password})
+
+    if response.status_code == 200:
+        data = json.loads(response.data)
+        return data["access_token"]
     return None
 
 
@@ -64,8 +68,6 @@ def test_login(mock_get, client):
 def test_get_videos_metadata_proxy(mock_get, client):
     response = client.get('/api/v1/videometadata')
     assert response.status_code == 401  # Unauthenticated access
-
-    # Add your authentication token here
     headers = {'Authorization': f'Bearer {tv2_user_token}'}
     response = client.get('/api/v1/videometadata', headers=headers)
     assert response.status_code == 200
@@ -78,8 +80,6 @@ def test_get_videos_metadata_proxy(mock_get, client):
 def test_get_video_metadata_proxy(mock_get, client):
     response = client.get('/api/v1/videometadata/1')
     assert response.status_code == 401  # Unauthenticated access
-
-    # Add your authentication token here
     headers = {'Authorization': f'Bearer {tv2_user_token}'}
     response = client.get('/api/v1/videometadata/1', headers=headers)
     assert response.status_code == 200
@@ -91,7 +91,6 @@ def test_get_video_metadata_proxy(mock_get, client):
 def test_search_videos_proxy(mock_get, client):
     response = client.get('/api/v1/videometadata/search?q=sample')
     assert response.status_code == 401  
-    # Add your authentication token here
     headers = {'Authorization': f'Bearer {tv2_user_token}'}
     response = client.get('/api/v1/videometadata/search?q=sample', headers=headers)
     assert response.status_code == 200
