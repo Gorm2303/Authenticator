@@ -160,6 +160,51 @@ def search_videos_proxy():
     response = requests.get(os.environ.get("CACHER_API_URL") + f"/api/v1/videometadata/search?q={query}")
     return jsonify(response.json()), response.status_code
 
+# VIDEO UPLOADER PROXY ENDPOINTS
+
+@app.route('/api/v1/videometadata', methods=['POST'])
+@jwt_required()
+def upload_video_metadata_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") == "admin"):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    response = requests.post(os.environ.get("UPLOADER_API_URL") + "/api/v1/videometadata", json=request.json)
+    return jsonify(response.json()), response.status_code
+
+@app.route('/api/v1/poster', methods=['POST'])
+@jwt_required()
+def upload_image_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") == "admin"):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    files = {'chunk': (request.files['chunk'].filename, request.files['chunk'].stream.read())}
+    data = {
+        'chunkIndex': request.form['chunkIndex'],
+        'chunks': request.form['chunks'],
+        'filename': request.form['filename']
+    }
+
+    response = requests.post(os.environ.get("UPLOADER_API_URL") + "/api/v1/poster", files=files, data=data)
+    return jsonify(response.json()), response.status_code
+
+@app.route('/api/v1/video', methods=['POST'])
+@jwt_required()
+def upload_video_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") == "admin"):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    files = {'chunk': (request.files['chunk'].filename, request.files['chunk'].stream.read())}
+    data = {
+        'chunkIndex': request.form['chunkIndex'],
+        'chunks': request.form['chunks'],
+        'filename': request.form['filename']
+    }
+
+    response = requests.post(os.environ.get("UPLOADER_API_URL") + "/api/v1/video", files=files, data=data)
+    return jsonify(response.json()), response.status_code
 
 initialize_tv2_user()
 

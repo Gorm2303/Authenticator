@@ -26,5 +26,6 @@ services:
       TV2_PASSWORD: "password123"
       SUBSCRIPTION_API_URL: ""
       CACHER_API_URL: ""
+      UPLOADER_API_URL: ""
 volumes:
   mongo_users:

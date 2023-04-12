@@ -1,13 +1,25 @@
 import pytest
 import json
+import requests
+from unittest.mock import Mock, patch
 from app import app, usersCollection
 from bson import ObjectId
+from flask_jwt_extended import create_access_token
 from werkzeug.security import generate_password_hash
-from unittest.mock import patch, Mock
 
 @pytest.fixture
 def client():
     return app.test_client()
+
+@pytest.fixture
+def tv2_user_token():
+    identity = {
+        "_id": "123456789012345678901234",
+        "email": "tv2@example.com",
+        "role": "admin"
+    }
+    access_token = create_access_token(identity=identity)
+    return access_token
 
 # Test the index route
 def test_index(client):
@@ -45,3 +57,43 @@ def test_login(mock_get, client):
 
     # Cleanup
     usersCollection.delete_one({"_id": ObjectId(user_id)})
+
+# Test get_videos_metadata_proxy
+@patch('requests.get', return_value=Mock(status_code=200, json=lambda: [{"id": "1", "title": "Sample Video 1"}]))
+def test_get_videos_metadata_proxy(mock_get, client):
+    response = client.get('/api/v1/videometadata')
+    assert response.status_code == 401  # Unauthenticated access
+
+    # Add your authentication token here
+    headers = {'Authorization': f'Bearer {tv2_user_token}'}
+    response = client.get('/api/v1/videometadata', headers=headers)
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert len(data) == 1
+    assert data[0]["id"] == "1"
+
+# Test get_video_metadata_proxy
+@patch('requests.get', return_value=Mock(status_code=200, json=lambda: {"id": "1", "title": "Sample Video 1"}))
+def test_get_video_metadata_proxy(mock_get, client):
+    response = client.get('/api/v1/videometadata/1')
+    assert response.status_code == 401  # Unauthenticated access
+
+    # Add your authentication token here
+    headers = {'Authorization': f'Bearer {tv2_user_token}'}
+    response = client.get('/api/v1/videometadata/1', headers=headers)
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert data["id"] == "1"
+
+# Test search_videos_proxy
+@patch('requests.get', return_value=Mock(status_code=200, json=lambda: [{"id": "1", "title": "Sample Video 1"}]))
+def test_search_videos_proxy(mock_get, client):
+    response = client.get('/api/v1/videometadata/search?q=sample')
+    assert response.status_code == 401  
+    # Add your authentication token here
+    headers = {'Authorization': f'Bearer {tv2_user_token}'}
+    response = client.get('/api/v1/videometadata/search?q=sample', headers=headers)
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert len(data) == 1
+    assert data[0]["id"] == "1"
