@@ -3,6 +3,7 @@ import json
 from app import app, usersCollection
 from bson import ObjectId
 from werkzeug.security import generate_password_hash
+from unittest.mock import patch, Mock
 
 @pytest.fixture
 def client():
@@ -29,13 +30,15 @@ def test_signup(client):
     usersCollection.delete_one({"_id": ObjectId(user["_id"])})
 
 # Test the login route
-def test_login(client):
+@patch('requests.get', return_value=Mock(status_code=200))
+def test_login(mock_get, client):
     email = "login_test@example.com"
     password = "testpassword"
     hashed_password = generate_password_hash(password, method="sha512")
     user_id = usersCollection.insert_one({"email": email, "password": hashed_password, "role": "user"}).inserted_id
 
-    response = client.post('/api/v1/login', json={"email": email, "password": password})
+    with patch.dict('os.environ', {'SUBSCRIPTION_API_URL': 'http://fakeurl.com'}):
+        response = client.post('/api/v1/login', json={"email": email, "password": password})
     assert response.status_code == 200
     data = json.loads(response.data)
     assert "access_token" in data
