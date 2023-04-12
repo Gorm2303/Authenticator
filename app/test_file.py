@@ -68,7 +68,8 @@ def test_login(mock_get, client):
 def test_get_videos_metadata_proxy(mock_get, client):
     response = client.get('/api/v1/videometadata')
     assert response.status_code == 401  # Unauthenticated access
-    headers = {'Authorization': f'Bearer {tv2_user_token}'}
+    token = tv2_user_token
+    headers = {'Authorization': f'Bearer {token}'}
     response = client.get('/api/v1/videometadata', headers=headers)
     assert response.status_code == 200
     data = json.loads(response.data)
