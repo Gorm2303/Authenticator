@@ -6,6 +6,7 @@ from app import app, usersCollection
 from bson import ObjectId
 from flask_jwt_extended import create_access_token
 from werkzeug.security import generate_password_hash
+import os
 
 @pytest.fixture
 def client():
@@ -13,13 +14,13 @@ def client():
 
 @pytest.fixture
 def tv2_user_token():
-    identity = {
-        "_id": "123456789012345678901234",
-        "email": "tv2@example.com",
-        "role": "admin"
-    }
-    access_token = create_access_token(identity=identity)
-    return access_token
+    email = os.environ.get("TV2_EMAIL")
+    user = usersCollection.find_one({"email": email})
+    if user:
+        access_token = create_access_token(identity=user)
+        return access_token
+    return None
+
 
 # Test the index route
 def test_index(client):
