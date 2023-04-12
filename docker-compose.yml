@@ -8,16 +8,16 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
       MONGO_INITDB_DATABASE: usersdb
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
-      - ./mongo_users:/data/db
+      - mongo_users:/data/db
 
   authenticator:
     build: .
     restart: always
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
       - mongo_users
     environment:
@@ -26,3 +26,5 @@ services:
       TV2_PASSWORD: "password123"
       SUBSCRIPTION_API_URL: ""
       CACHER_API_URL: ""
+volumes:
+  mongo_users:

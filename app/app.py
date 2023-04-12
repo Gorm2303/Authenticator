@@ -160,33 +160,6 @@ def search_videos_proxy():
     response = requests.get(os.environ.get("CACHER_API_URL") + f"/api/v1/videometadata/search?q={query}")
     return jsonify(response.json()), response.status_code
 
-# Protected endpoint for free users
-@app.route("/protected/free", methods=["GET"])
-@jwt_required()
-def protected_free():
-    claims = get_jwt()
-    if not claims.get("roles") == "user":
-        return jsonify({"msg": "Insufficient permissions"}), 403
-    return jsonify({"msg": "Access granted for free user"}), 200
-
-# Protected endpoint for subscribers
-@app.route("/protected/subscriber", methods=["GET"])
-@jwt_required()
-def protected_subscriber():
-    claims = get_jwt()
-    if not claims.get("roles") == "subscriber":
-        return jsonify({"msg": "Insufficient permissions"}), 403
-    return jsonify({"msg": "Access granted for subscriber"}), 200
-
-# Protected endpoint for TV2
-@app.route("/protected/tv2", methods=["GET"])
-@jwt_required()
-def protected_tv2():
-    claims = get_jwt()
-    if not claims.get("roles") == "admin":
-        return jsonify({"msg": "Insufficient permissions"}), 403
-    return jsonify({"msg": "Access granted for TV2"}), 200
-
 
 initialize_tv2_user()
 
