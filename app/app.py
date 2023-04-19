@@ -2,19 +2,19 @@ from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_cors import CORS
 from bson import ObjectId
 import requests
 import os
 
 app = Flask(__name__)
-CORS(app)
 client = MongoClient(os.environ.get("MONGO_URI"))
 db = client['usersdb']
 usersCollection = db['users']
 app.config['JWT_SECRET_KEY'] = 'super-secret'
 jwt = JWTManager(app)
 SUBSCRIPTION_API_URL = os.environ.get("SUBSCRIPTION_API_URL")
+CACHER_API_URL = os.environ.get("CACHER_API_URL")
+UPLOADER_API_URL = os.environ.get("UPLOADER_API_URL")
 # Define custom claims for different authorization levels
 @jwt.additional_claims_loader
 def add_claims_to_access_token(identity):
@@ -136,7 +136,7 @@ def get_videos_metadata_proxy():
     if not (claims.get("role") in ["subscriber", "admin"]):
         return jsonify({"msg": "Insufficient permissions"}), 403
 
-    response = requests.get(os.environ.get("CACHER_API_URL") + "/api/v1/videometadata")
+    response = requests.get(CACHER_API_URL + "/api/v1/videometadata")
     return jsonify(response.json()), response.status_code
 
 @app.route('/api/v1/videometadata/<id>', methods=['GET'])
@@ -146,7 +146,7 @@ def get_video_metadata_proxy(id):
     if not (claims.get("role") in ["subscriber", "admin"]):
         return jsonify({"msg": "Insufficient permissions"}), 403
 
-    response = requests.get(os.environ.get("CACHER_API_URL") + f"/api/v1/videometadata/{id}")
+    response = requests.get(CACHER_API_URL + f"/api/v1/videometadata/{id}")
     return jsonify(response.json()), response.status_code
 
 @app.route('/api/v1/videometadata/search', methods=['GET'])
@@ -157,7 +157,7 @@ def search_videos_proxy():
         return jsonify({"msg": "Insufficient permissions"}), 403
 
     query = request.args.get('q', '')
-    response = requests.get(os.environ.get("CACHER_API_URL") + f"/api/v1/videometadata/search?q={query}")
+    response = requests.get(CACHER_API_URL + f"/api/v1/videometadata/search?q={query}")
     return jsonify(response.json()), response.status_code
 
 # VIDEO UPLOADER PROXY ENDPOINTS
@@ -169,7 +169,7 @@ def upload_video_metadata_proxy():
     if not (claims.get("role") == "admin"):
         return jsonify({"msg": "Insufficient permissions"}), 403
 
-    response = requests.post(os.environ.get("UPLOADER_API_URL") + "/api/v1/videometadata", json=request.json)
+    response = requests.post(UPLOADER_API_URL + "/api/v1/videometadata", json=request.json)
     return jsonify(response.json()), response.status_code
 
 @app.route('/api/v1/poster', methods=['POST'])
@@ -186,7 +186,7 @@ def upload_image_proxy():
         'filename': request.form['filename']
     }
 
-    response = requests.post(os.environ.get("UPLOADER_API_URL") + "/api/v1/poster", files=files, data=data)
+    response = requests.post(UPLOADER_API_URL + "/api/v1/poster", files=files, data=data)
     return jsonify(response.json()), response.status_code
 
 @app.route('/api/v1/video', methods=['POST'])
@@ -203,7 +203,7 @@ def upload_video_proxy():
         'filename': request.form['filename']
     }
 
-    response = requests.post(os.environ.get("UPLOADER_API_URL") + "/api/v1/video", files=files, data=data)
+    response = requests.post(UPLOADER_API_URL + "/api/v1/video", files=files, data=data)
     return jsonify(response.json()), response.status_code
 
 initialize_tv2_user()
