@@ -101,7 +101,12 @@ def signup():
 # SUBSCRIPTION PROXY ENDPOINTS
 
 @app.route("/api/v1/create_subscription", methods=["POST"])
+@jwt_required()
 def create_subscription_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") in ["user"]):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+    
     # Parse the JSON body
     user_id = request.json.get("user_id", None)
     subscription_type_id = request.json.get("subscription_type_id", None)
@@ -114,12 +119,14 @@ def create_subscription_proxy():
 
     # If subscription was created successfully and user's role is "user", update the role to "subscriber"
     if response.status_code == 201:
-        user = usersCollection.find_one({"_id": user_id})
+        user = usersCollection.find_one({"_id": ObjectId(user_id)})
         if user and user["role"] == "user":
-            usersCollection.update_one({"_id": user_id}, {"$set": {"role": "subscriber"}})
+            usersCollection.update_one({"_id": ObjectId(user_id)}, {"$set": {"role": "subscriber"}})
+            user["role"] = "subscriber"
 
-    # Return the same response from the external API
-    return jsonify(response.json()), response.status_code
+    # Return the same a subscriber response
+    access_token = create_access_token(identity=user)
+    return jsonify({"access_token": access_token}), response.status_code
 
 @app.route("/api/v1/subscriptiontypes", methods=["GET"])
 def get_subscription_types():
