@@ -107,11 +107,9 @@ def create_subscription_proxy():
     if not (claims.get("role") in ["user"]):
         return jsonify({"msg": "Insufficient permissions"}), 403
     
-    # Parse the JSON body
     user_id = request.json.get("user_id", None)
     subscription_type_id = request.json.get("subscription_type_id", None)
 
-    # Forward the data to the external API
     response = requests.post(
         f"{SUBSCRIPTION_API_URL}/subscriptions",
         json={"user_id": user_id, "subscription_type_id": subscription_type_id}
@@ -123,10 +121,11 @@ def create_subscription_proxy():
         if user and user["role"] == "user":
             usersCollection.update_one({"_id": ObjectId(user_id)}, {"$set": {"role": "subscriber"}})
             user["role"] = "subscriber"
+            access_token = create_access_token(identity=user)
+            return jsonify({"msg": "Subscription created successfully", "access_token": access_token}), 201
 
-    # Return the same a subscriber response
-    access_token = create_access_token(identity=user)
-    return jsonify({"access_token": access_token}), response.status_code
+    # Return the same response from subscription API
+    return jsonify(response.json()), response.status_code
 
 @app.route("/api/v1/subscriptiontypes", methods=["GET"])
 def get_subscription_types():
