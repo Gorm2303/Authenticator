@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from bson import ObjectId
 import requests
 import os
+from datetime import timedelta
 
 app = Flask(__name__)
 client = MongoClient(os.environ.get("MONGO_URI"))
@@ -12,6 +13,7 @@ db = client['usersdb']
 usersCollection = db['users']
 app.config['JWT_SECRET_KEY'] = 'super-secret'
 jwt = JWTManager(app)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=4)
 SUBSCRIPTION_API_URL = os.environ.get("SUBSCRIPTION_API_URL")
 CACHER_API_URL = os.environ.get("CACHER_API_URL")
 UPLOADER_API_URL = os.environ.get("UPLOADER_API_URL")
