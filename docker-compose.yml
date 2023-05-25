@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  mongo_users:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: usersdb
+    expose:
+      - "27017"
+    volumes:
+      - mongo_users:/data/db
+
+  authenticator:
+    build: .
+    restart: always
+    expose:
+      - "80"
+    depends_on:
+      - mongo_users
+    environment:
+      MONGO_URI: "mongodb://root:root@mongo_users:27017"
+      TV2_EMAIL: "tv2@example.com"
+      TV2_PASSWORD: "password123"
+      SUBSCRIPTION_API_URL: ""
+      CACHER_API_URL: ""
+      UPLOADER_API_URL: ""
+volumes:
+  mongo_users:
