@@ -250,14 +250,14 @@ def upload_video_proxy():
     response = requests.post(UPLOADER_API_URL + "/api/v1/video", files=files, data=data)
     return jsonify(response.json()), response.status_code
 
-@app.route('/api/v1/video/<video_id>', methods=['DELETE'])
+@app.route('/api/v1/videometadata/<video_id>', methods=['DELETE'])
 @jwt_required()
-def delete_video_proxy(video_id):
+def delete_videometadata_proxy(video_id):
     claims = get_jwt()
     if not (claims.get("role") == "admin"):
         return jsonify({"msg": "Insufficient permissions"}), 403
 
-    response = requests.delete(UPLOADER_API_URL + f"/api/v1/video/{video_id}")
+    response = requests.delete(UPLOADER_API_URL + f"/api/v1/videometadata/{video_id}")
     return jsonify(response.json()), response.status_code
 
 
