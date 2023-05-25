@@ -206,6 +206,16 @@ def upload_video_metadata_proxy():
     response = requests.post(UPLOADER_API_URL + "/api/v1/videometadata", json=request.json)
     return jsonify(response.json()), response.status_code
 
+@app.route('/api/v1/videometadata', methods=['PUT'])
+@jwt_required()
+def update_video_metadata_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") == "admin"):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    response = requests.put(UPLOADER_API_URL + "/api/v1/videometadata", json=request.json)
+    return jsonify(response.json()), response.status_code
+
 @app.route('/api/v1/poster', methods=['POST'])
 @jwt_required()
 def upload_image_proxy():
