@@ -135,6 +135,32 @@ def get_subscription_types():
 
     return jsonify(response.json()), response.status_code
 
+@app.route("/api/v1/cancel_subscription", methods=["PUT"])
+@jwt_required()
+def cancel_subscription_proxy():
+    claims = get_jwt()
+    if not (claims.get("role") in ["user", "subscriber"]):
+        return jsonify({"msg": "Insufficient permissions"}), 403
+
+    user_id = request.json.get("user_id", None)
+
+    response = requests.put(
+        f"{SUBSCRIPTION_API_URL}/subscriptions/{user_id}/cancel",
+    )
+
+    # If subscription was cancelled successfully and user's role is "subscriber", update the role to "user"
+    if response.status_code == 200:
+        user = usersCollection.find_one({"_id": ObjectId(user_id)})
+        if user and user["role"] == "subscriber":
+            usersCollection.update_one({"_id": ObjectId(user_id)}, {"$set": {"role": "user"}})
+            user["role"] = "user"
+            access_token = create_access_token(identity=user)
+            return jsonify({"msg": "Subscription cancelled successfully", "access_token": access_token}), 200
+
+    # Return the same response from subscription API
+    return jsonify(response.json()), response.status_code
+
+
 # CACHER PROXY ENDPOINTS
 
 @app.route('/api/v1/videometadata', methods=['GET'])
